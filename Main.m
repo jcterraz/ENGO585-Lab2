@@ -15,35 +15,24 @@ close all
 
 % Read the file with data and extract its data
 ranges = load('Lab2data.txt');
-% range.time = data(:,1);
-% range.one = data(:,2); 
-% range.two = data(:,3); 
-% range.three = data(:,4); 
-% range.four = data(:,5);
-% 
-% clear data
 
 % Given Target Coordinates in meters
-% target.one = [0,0];
-% target.two = [100,0];
-% target.three = [100,100];
-% target.four = [0,100];
  targets = [0,0; 100,0; 100,100; 0,100];
 
 %% Task 1: Batch Parametric Least Squares
-est_coords = [0, 0];
+est_coords = [50, 50];
 P = diag(ones(4,1));
 
-% 1.a Compute 2-D Solution for each epoch
-x_hat = zeros(150,2);
+% 1.a Compute 2-D Solution for each epoch----------------------------------
+x_hat_1_a = zeros(150,2);
 for i = 1 : length(ranges)
     thres = 0;
     while thres == 0
         % Obtain the A matrix
         A = zeros(4,2); 
         for j = 1 : 4
-            A(j, 1) = (targets(j, 1) - est_coords(1)) / ranges(i, j + 1);
-            A(j, 2) = (targets(j, 2) - est_coords(2)) / ranges(i, j + 1);
+            A(j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
+            A(j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
         end
         
         % Compute w Matrix
@@ -58,14 +47,63 @@ for i = 1 : length(ranges)
         delta = -1 * inv(N) * A' * P * w;
         
         % check 
-        if any(abs(delta) < 0.0001)
+        if abs(delta(1)) < 0.0001 && abs(delta(2)) < 0.0001
            thres = 1;     
         else
            est_coords = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
         end
     end
-    x_hat(i,:) = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+    x_hat_1_a(i,:) = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+    est_coords = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
 end
+
+figure
+plot(targets(:,1), targets(:,2),'o')
+hold on
+plot(x_hat_1_a(:,1), x_hat_1_a(:,2),'*');
+hold off
+title('Task 1.a 2-D Solution for each epoch')
+xlabel('X Coordinates (meters)')
+ylabel('Y Coordinates (meters)')
+legend('Targets Points', 'Epoch Solution')
+
+% 1.b Batch Solution-------------------------------------------------------
+est_coords = [50, 50];
+A = zeros(50*4,2);
+w= zeros(50*4,1);
+P = diag(ones(50*4,1));
+thres = 0;
+while thres == 0
+    for i = 1: 50
+        % Obtain the A matrix
+        for j = 1 : 4
+            A((i-1)*4+j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
+            A((i-1)*4+j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
+        end
+
+        % Compute w Matrix
+        for j = 1 : 4 
+            w((i-1)*4+j, 1) = sqrt((targets(j, 1) - est_coords(1))^2 + ...
+                (targets(j, 2) - est_coords(2))^2) - ranges(i, j + 1);
+        end
+    end
+    % Compute N Matrix and obtain the delta values
+    N = A' * P * A;
+    delta = -1 * inv(N) * A' * P * w;
+    
+    % Check for delta and if threshold passes obtain coordinates
+    if abs(delta(1)) < 0.0001 && abs(delta(2)) < 0.0001
+        thres = 1;
+        x_hat_1_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+    else
+        est_coords = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+    end
+end
+
+
+
+
+% 1.c 
 
 %% Task 2: Summation of Normals and Sequential LS
 
