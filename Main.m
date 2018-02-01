@@ -109,7 +109,7 @@ title('Residuals from Target 1 (0,0)')
 xlabel('Number of Measurement')
 ylabel('Residual (meters)')
 
-Apos =(res' * P_b * res)/(50-4);%aposteriori
+Apos =(res' * P_b * res)/(200-2);%aposteriori
 
 C_x = Apos * inv(A_b' * P_b * A_b);%covariance matrix
 
@@ -120,15 +120,15 @@ a = sqrt(0.5 * (C_x(1,1) + C_x(2,2)) + sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
 b = sqrt(0.5 * (C_x(1,1) + C_x(2,2)) - sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
     + C_x(1,2)^2)) * 2.45;
 
-azimuth = (1/2)* atan((2 * C_x(1,2))/(C_x(1,1) - C_x(2,2)));
+azimuth = 0.5* atan((2 * C_x(1,2))/(C_x(1,1) - C_x(2,2)));
 
-alpha = (90-azimuth) * pi/180;
+alpha = (azimuth) * pi/180;
 t = [-0.01:0.01:2*pi];
 
 %Obtain ellipse coordinates
 
 ellipse_x =  (sin(alpha)*(a*cos(t)) - cos(alpha)*(b*sin(t))) + x_hat_1_b(1);
-ellipse_y =  (cos(alpha)*(a*cos(t)) + sin(alpha)*(b*sin(t))) + x_hat_1_b(1);
+ellipse_y =  (cos(alpha)*(a*cos(t)) + sin(alpha)*(b*sin(t))) + x_hat_1_b(2);
 
 figure
 plot(x_hat_1_b(1),x_hat_1_b(2), 'o')
