@@ -100,7 +100,7 @@ while thres == 0
 end
 
 % 1.c Plot Residuals-------------------------------------------------------
-res = A * delta + w;
+res = A_b * delta + w_b;
 
 figure
 plot(1:1:50, res(1:4:200,1))
@@ -108,9 +108,9 @@ title('Residuals from Target 1 (0,0)')
 xlabel('Number of Measurement')
 ylabel('Residual (meters)')
 
-Apos =(res' * P * res)/(50-4);%aposteriori
+Apos =(res' * P_b * res)/(50-4);%aposteriori
 
-C_x = inv(A' * P * A);%covariance matrix
+C_x = Apos * inv(A_b' * P_b * A_b);%covariance matrix
 
 % 1.d Error Ellipse--------------------------------------------------------
 a = sqrt(0.5 * (C_x(1,1) + C_x(2,2)) + sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
@@ -121,14 +121,19 @@ b = sqrt(0.5 * (C_x(1,1) + C_x(2,2)) - sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
 
 azimuth = (1/2)* atan((2 * C_x(1,2))/(C_x(1,1) - C_x(2,2)));
 
-t = linspace(0, 2*pi);
-Theta = (90-azimuth) * pi/180;
+alpha = (90-azimuth) * pi/180;
+t = [-0.01:0.01:2*pi];
+
+%Obtain ellipse coordinates
+
+ellipse_x =  (sin(alpha)*(a*cos(t)) - cos(alpha)*(b*sin(t))) + x_hat_1_b(1);
+ellipse_y =  (cos(alpha)*(a*cos(t)) + sin(alpha)*(b*sin(t))) + x_hat_1_b(1);
 
 figure
 plot(x_hat_1_b(1),x_hat_1_b(2), 'o')
 hold on
 plot(x_hat_1_a(1:50,1),x_hat_1_a(1:50,2), '*')
-plot(x_hat_1_b(1) + a*cos(Theta*t), x_hat_1_b(2) + b*sin(Theta*t))
+plot(ellipse_x, ellipse_y)
 legend('Batch Solution', 'Each Point Solution', 'Ellipse')
 xlabel('East (meters)')
 ylabel('North (meters)')
