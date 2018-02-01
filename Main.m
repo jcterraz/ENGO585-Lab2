@@ -1,5 +1,5 @@
 % Author: Juan Carlos Terrazas Borbon
-% Last Update: 2018-01-29
+% Last Update: 2018-01-31
 % Course: ENGO 585
 % Lab: 2
 
@@ -100,10 +100,26 @@ while thres == 0
     end
 end
 
+% 1.c Plot Residuals
+res = A * delta + w;
 
+Apos =(res' * P * res)/(50-4);%aposteriori
 
+C_x = inv(A' * P * A);%covariance matrix
 
-% 1.c 
+% 1.d Error Ellipse
+a = sqrt((1/2) * (C_x(1,1) + C_x(2,2)) + sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
+    + C_x(1,2)^2))* 2.45;
+
+b = sqrt((1/2) * (C_x(1,1) + C_x(2,2)) - sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
+    + C_x(1,2)^2)) * 2.45;
+
+azimuth = (1/2)* atan((2 * C_x(1,2))/(C_x(1,1) - C_x(2,2)));
+
+figure
+plot(x_hat_1_b(1),x_hat_1_b(2))
+hold on
+pdeellip(x_hat_1_b(1),x_hat_1_b(2),2,5,18)
 
 %% Task 2: Summation of Normals and Sequential LS
 
