@@ -198,18 +198,21 @@ for i = 1:50
             thres =1;
 %             % check 
 %             if abs(delta(1)) < 0.0001 && abs(delta(2)) < 0.0001
-%                thres = 1;     
-%             else
-%                est_coords = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+%                thres = 1;
 %             end
+            thres = 1;
+            est_coords = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+            x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
         else
             K = inv(N) * A' * inv(P + A*inv(N)*A');
             delta = delta - K*(A*delta + w);
             N = A' * P * A;
+            x_hat_2_b(1) = x_hat_2_b(1) + delta(1);
+            x_hat_2_b(2) = x_hat_2_b(2) + delta(2);
         end
     end
 end
-x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+%x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
 
 %% Task 3: Kalman Filtering
 % 3.a Sequential Least Squares of whole data
