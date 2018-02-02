@@ -135,7 +135,38 @@ plot(x_hat_1_b(1),x_hat_1_b(2), 'o')
 hold on
 plot(x_hat_1_a(1:50,1),x_hat_1_a(1:50,2), '*')
 plot(ellipse_x, ellipse_y)
+title('Error ellipse of Batch Solution')
 legend('Batch Solution', 'Each Point Solution', 'Ellipse')
+xlabel('East (meters)')
+ylabel('North (meters)')
+
+% 1.d Error Ellipse of a single point--------------------------------------
+res = A * delta + w;%residuals
+Apos =(res' * P * res)/(4-2);%aposteriori
+C_x = Apos * inv(A' * P * A);%covariance matrix
+
+a = sqrt(0.5 * (C_x(1,1) + C_x(2,2)) + sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
+    + C_x(1,2)^2))* 2.45;
+
+b = sqrt(0.5 * (C_x(1,1) + C_x(2,2)) - sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
+    + C_x(1,2)^2)) * 2.45;
+
+azimuth = 0.5* atan((2 * C_x(1,2))/(C_x(1,1) - C_x(2,2)));
+
+alpha = (azimuth) * pi/180;
+t = [-0.01:0.01:2*pi];
+
+%Obtain ellipse coordinates
+ellipse_x =  (sin(alpha)*(a*cos(t)) - cos(alpha)*(b*sin(t))) + x_hat_1_a(150,1);
+ellipse_y =  (cos(alpha)*(a*cos(t)) + sin(alpha)*(b*sin(t))) + x_hat_1_a(150,2);
+
+figure
+plot(x_hat_1_a(150,1),x_hat_1_a(150,2), 'o')
+hold on
+plot(x_hat_1_a(1:150,1),x_hat_1_a(1:150,2), '*')
+plot(ellipse_x, ellipse_y)
+title('Error ellipse of Epoch 150')
+legend('Epoch 1', 'Other Epochs Point Solution', 'Ellipse')
 xlabel('East (meters)')
 ylabel('North (meters)')
 
@@ -231,9 +262,62 @@ for i = 1:150
         delta = delta - K*(A*delta + w);
         N = inv(inv(N) - K*A*inv(N));
         x_hat_3_a(i,:) = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+        
+        % Comment or Uncomment to see the kinematic results difference
+%         if i >50
+%             est_coords = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+%         end
     end
 end
+figure
+plot(x_hat_3_a(:,1), x_hat_3_a(:,2), '*')
+title('3.a Sequential Least Square results of all data')
+xlabel('East (meters)')
+ylabel('North (meters)')
 
 % 3.b Kalman Filter of whole data
+est_coords = [50, 50];
+for i = 1:150
+    % Obtain the A matrix
+    A = zeros(4,2); 
+    for j = 1 : 4
+        A(j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
+        A(j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
+    end
+
+    % Compute w Matrix
+    w= zeros(4,1);
+    for j = 1 : 4 
+        w(j, 1) = sqrt((targets(j, 1) - est_coords(1))^2 + ...
+            (targets(j, 2) - est_coords(2))^2) - ranges(i, j + 1);
+    end
+
+    if i==1
+        % Compute N Matrix and obtain the delta values for first observation
+        N = A' * P * A;
+        delta = -1 * inv(N) * A' * P * w;
+        x_hat_3_b(i,:) = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+    else
+        % Sequential LS
+        K = inv(N) * A' * inv(P + A*inv(N)*A');
+        delta = delta - K*(A*delta + w);
+        Q = 50;
+        N = inv(inv(N) - K*A*inv(N))+Q;
+        x_hat_3_b(i,:) = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+        
+        % Comment or Uncomment to see the kinematic results difference
+        if i >50
+            est_coords = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+        end
+    end
+end
+figure
+plot(x_hat_3_b(:,1), x_hat_3_b(:,2), '*')
+hold on
+plot(x_hat_3_a(:,1), x_hat_3_a(:,2))
+title('3.b Kalman Filter results with Q of 50 vs SLS')
+legend('Kalman Filter', 'Sequential')
+xlabel('East (meters)')
+ylabel('North (meters)')
 
 
