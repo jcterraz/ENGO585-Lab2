@@ -1,5 +1,5 @@
 % Author: Juan Carlos Terrazas Borbon
-% Last Update: 2018-01-31
+% Last Update: 2018-02-01
 % Course: ENGO 585
 % Lab: 2
 
@@ -176,43 +176,32 @@ thres = 0;
 est_coords = [50, 50];
 thres  = 0;
 for i = 1:50
-    while thres == 0
-        % Obtain the A matrix
-        A = zeros(4,2); 
-        for j = 1 : 4
-            A(j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
-            A(j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
-        end
+    % Obtain the A matrix
+    A = zeros(4,2); 
+    for j = 1 : 4
+        A(j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
+        A(j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
+    end
 
-        % Compute w Matrix
-        w= zeros(4,1);
-        for j = 1 : 4 
-            w(j, 1) = sqrt((targets(j, 1) - est_coords(1))^2 + ...
-                (targets(j, 2) - est_coords(2))^2) - ranges(i, j + 1);
-        end
+    % Compute w Matrix
+    w= zeros(4,1);
+    for j = 1 : 4 
+        w(j, 1) = sqrt((targets(j, 1) - est_coords(1))^2 + ...
+            (targets(j, 2) - est_coords(2))^2) - ranges(i, j + 1);
+    end
 
-        if i==1
-            % Compute N Matrix and obtain the delta values for first observation
-            N = A' * P * A;
-            delta = -1 * inv(N) * A' * P * w;
-            thres =1;
-%             % check 
-%             if abs(delta(1)) < 0.0001 && abs(delta(2)) < 0.0001
-%                thres = 1;
-%             end
-            thres = 1;
-            est_coords = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
-            x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
-        else
-            K = inv(N) * A' * inv(P + A*inv(N)*A');
-            delta = delta - K*(A*delta + w);
-            N = A' * P * A;
-            x_hat_2_b(1) = x_hat_2_b(1) + delta(1);
-            x_hat_2_b(2) = x_hat_2_b(2) + delta(2);
-        end
+    if i==1
+        % Compute N Matrix and obtain the delta values for first observation
+        N = A' * P * A;
+        delta = -1 * inv(N) * A' * P * w;
+
+    else
+        K = inv(N) * A' * inv(P + A*inv(N)*A');
+        delta = delta - K*(A*delta + w);
+        N = inv(inv(N) - K*A*inv(N));
     end
 end
-%x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
+x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
 
 %% Task 3: Kalman Filtering
 % 3.a Sequential Least Squares of whole data
