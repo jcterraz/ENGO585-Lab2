@@ -1,11 +1,12 @@
 % Author: Juan Carlos Terrazas Borbon
-% Last Update: 2018-01-31
+% Last Update: 2018-02-01
 % Course: ENGO 585
 % Lab: 2
 
 % ---------------------Purpose of Code-------------------------------------
-% The purpose of this code is to able to perform the first task required to
-% perfom in the lab handout which involves Parametric Least Squares adjustment 
+% The purpose of this code is to able to perform the 3 task required to
+% perfom in the lab handout which involves Parametric Least Squares 
+% adjustment, Summation of Normal, Sequential LS and Kalman Filter 
 
 % Clear variables, close figure and command
 clc
@@ -108,7 +109,7 @@ title('Residuals from Target 1 (0,0)')
 xlabel('Number of Measurement')
 ylabel('Residual (meters)')
 
-Apos =(res' * P_b * res)/(50-4);%aposteriori
+Apos =(res' * P_b * res)/(200-2);%aposteriori
 
 C_x = Apos * inv(A_b' * P_b * A_b);%covariance matrix
 
@@ -119,15 +120,15 @@ a = sqrt(0.5 * (C_x(1,1) + C_x(2,2)) + sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
 b = sqrt(0.5 * (C_x(1,1) + C_x(2,2)) - sqrt((1/4) * (C_x(1,1) - C_x(2,2))^2 ...
     + C_x(1,2)^2)) * 2.45;
 
-azimuth = (1/2)* atan((2 * C_x(1,2))/(C_x(1,1) - C_x(2,2)));
+azimuth = 0.5* atan((2 * C_x(1,2))/(C_x(1,1) - C_x(2,2)));
 
-alpha = (90-azimuth) * pi/180;
+alpha = (azimuth) * pi/180;
 t = [-0.01:0.01:2*pi];
 
 %Obtain ellipse coordinates
 
 ellipse_x =  (sin(alpha)*(a*cos(t)) - cos(alpha)*(b*sin(t))) + x_hat_1_b(1);
-ellipse_y =  (cos(alpha)*(a*cos(t)) + sin(alpha)*(b*sin(t))) + x_hat_1_b(1);
+ellipse_y =  (cos(alpha)*(a*cos(t)) + sin(alpha)*(b*sin(t))) + x_hat_1_b(2);
 
 figure
 plot(x_hat_1_b(1),x_hat_1_b(2), 'o')
@@ -140,13 +141,98 @@ ylabel('North (meters)')
 
 %% Task 2: Summation of Normals and Sequential LS
 % 2.a Summation of Normal of 1.b
+est_coords = [50, 50];
+N = zeros(2,2);
+u = zeros(2,1);
 
+for i = 1: 50
+    % Obtain the A matrix
+    A = zeros(4,2); 
+    for j = 1 : 4
+        A(j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
+        A(j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
+    end
+
+    % Compute N Matrix
+    N = N + (A' * P * A);
+    
+    % Compute w Matrix
+    w= zeros(4,1);
+    for j = 1 : 4 
+        w(j, 1) = sqrt((targets(j, 1) - est_coords(1))^2 + ...
+            (targets(j, 2) - est_coords(2))^2) - ranges(i, j + 1);
+    end
+    
+    % Compute U Matrix
+    u = u + (A'*P*w);
+end
+
+delta = -1 * inv(N)* u;
+
+x_hat_2_a = [est_coords(1) + delta(1), est_coords(2) + delta(2)];
 
 % 2.b Sequential Least Squares of 1.b
+est_coords = [50, 50];
+for i = 1:50
+    % Obtain the A matrix
+    A = zeros(4,2); 
+    for j = 1 : 4
+        A(j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
+        A(j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
+    end
 
+    % Compute w Matrix
+    w= zeros(4,1);
+    for j = 1 : 4 
+        w(j, 1) = sqrt((targets(j, 1) - est_coords(1))^2 + ...
+            (targets(j, 2) - est_coords(2))^2) - ranges(i, j + 1);
+    end
+
+    if i==1
+        % Compute N Matrix and obtain the delta values for first observation
+        N = A' * P * A;
+        delta = -1 * inv(N) * A' * P * w;
+
+    else
+        % Sequential LS
+        K = inv(N) * A' * inv(P + A*inv(N)*A');
+        delta = delta - K*(A*delta + w);
+        N = inv(inv(N) - K*A*inv(N));
+    end
+end
+x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
 
 %% Task 3: Kalman Filtering
 % 3.a Sequential Least Squares of whole data
+est_coords = [50, 50];
+for i = 1:50
+    % Obtain the A matrix
+    A = zeros(4,2); 
+    for j = 1 : 4
+        A(j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
+        A(j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
+    end
+
+    % Compute w Matrix
+    w= zeros(4,1);
+    for j = 1 : 4 
+        w(j, 1) = sqrt((targets(j, 1) - est_coords(1))^2 + ...
+            (targets(j, 2) - est_coords(2))^2) - ranges(i, j + 1);
+    end
+
+    if i==1
+        % Compute N Matrix and obtain the delta values for first observation
+        N = A' * P * A;
+        delta = -1 * inv(N) * A' * P * w;
+
+    else
+        % Sequential LS
+        K = inv(N) * A' * inv(P + A*inv(N)*A');
+        delta = delta - K*(A*delta + w);
+        N = inv(inv(N) - K*A*inv(N));
+    end
+end
+x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
 
 % 3.b Kalman Filter of whole data
 
