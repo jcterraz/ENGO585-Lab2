@@ -172,9 +172,7 @@ delta = -1 * inv(N)* u;
 x_hat_2_a = [est_coords(1) + delta(1), est_coords(2) + delta(2)];
 
 % 2.b Sequential Least Squares of 1.b
-thres = 0;
 est_coords = [50, 50];
-thres  = 0;
 for i = 1:50
     % Obtain the A matrix
     A = zeros(4,2); 
@@ -196,6 +194,7 @@ for i = 1:50
         delta = -1 * inv(N) * A' * P * w;
 
     else
+        % Sequential LS
         K = inv(N) * A' * inv(P + A*inv(N)*A');
         delta = delta - K*(A*delta + w);
         N = inv(inv(N) - K*A*inv(N));
@@ -205,6 +204,35 @@ x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
 
 %% Task 3: Kalman Filtering
 % 3.a Sequential Least Squares of whole data
+est_coords = [50, 50];
+for i = 1:50
+    % Obtain the A matrix
+    A = zeros(4,2); 
+    for j = 1 : 4
+        A(j, 1) = (est_coords(1) - targets(j, 1)) / ranges(i, j + 1);
+        A(j, 2) = (est_coords(2) - targets(j, 2)) / ranges(i, j + 1);
+    end
+
+    % Compute w Matrix
+    w= zeros(4,1);
+    for j = 1 : 4 
+        w(j, 1) = sqrt((targets(j, 1) - est_coords(1))^2 + ...
+            (targets(j, 2) - est_coords(2))^2) - ranges(i, j + 1);
+    end
+
+    if i==1
+        % Compute N Matrix and obtain the delta values for first observation
+        N = A' * P * A;
+        delta = -1 * inv(N) * A' * P * w;
+
+    else
+        % Sequential LS
+        K = inv(N) * A' * inv(P + A*inv(N)*A');
+        delta = delta - K*(A*delta + w);
+        N = inv(inv(N) - K*A*inv(N));
+    end
+end
+x_hat_2_b = [est_coords(1) + delta(1),est_coords(2) + delta(2)];
 
 % 3.b Kalman Filter of whole data
 
